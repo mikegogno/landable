@@ -1,4 +1,4 @@
-import { ReactNode } from 'react'
+import { ReactNode } from "react";
 
 interface FeatureCardProps {
   icon: ReactNode;
@@ -8,11 +8,11 @@ interface FeatureCardProps {
 
 export function FeatureCard({ icon, title, description }: FeatureCardProps) {
   return (
-    <div className="group">
-      <div className="mb-5 inline-flex items-center justify-center w-14 h-14 rounded-full bg-blue-50 group-hover:bg-blue-100 transition-colors text-2xl">
+    <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-shadow group">
+      <div className="mb-4">
         {icon}
       </div>
-      <h3 className="text-xl font-semibold mb-2 group-hover:text-blue-600 transition-colors">
+      <h3 className="text-xl font-semibold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors">
         {title}
       </h3>
       <p className="text-slate-600">
