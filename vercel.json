@@ -16,5 +16,6 @@
   "github": {
     "enabled": true,
     "silent": false
-  }
+  },
+  "alias": ["www.landable.ai", "landable.ai"]
 }
