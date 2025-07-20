@@ -1,0 +1,239 @@
+classDiagram
+    class User {
+        uuid id
+        string email
+        string auth_provider
+        datetime created_at
+        datetime last_sign_in
+        
+        getProfile() Profile
+        updateEmail(email: string) boolean
+        checkSubscription() SubscriptionStatus
+    }
+
+    class Profile {
+        uuid id
+        uuid user_id
+        string full_name
+        string username
+        string bio
+        string job_title
+        string location
+        string avatar_url
+        boolean is_public
+        json metadata
+        datetime created_at
+        datetime updated_at
+        
+        update(data: Partial~Profile~) Profile
+        validateUsername(username: string) boolean
+        getPublicUrl() string
+    }
+
+    class Subscription {
+        uuid id
+        uuid user_id
+        string subscription_id
+        string status
+        string plan
+        datetime current_period_start
+        datetime current_period_end
+        datetime created_at
+        datetime updated_at
+        
+        isActive() boolean
+        getPlan() string
+        getRemainingDays() number
+        cancelSubscription() boolean
+        hasFeatureAccess(feature: string) boolean
+    }
+
+    class Resume {
+        uuid id
+        uuid user_id
+        string title
+        json contact_info
+        json education
+        json experience
+        json skills
+        json projects
+        json certifications
+        string template
+        json metadata
+        int version_count
+        datetime created_at
+        datetime updated_at
+        
+        update(data: Partial~Resume~) Resume
+        createVersion(description: string) ResumeVersion
+        getATSScore(jobDescription: string) number
+        duplicate() Resume
+        export(format: string, options: ExportOptions) Blob
+    }
+
+    class ResumeVersion {
+        uuid id
+        uuid resume_id
+        int version_number
+        json content
+        string description
+        datetime created_at
+        
+        restore() Resume
+    }
+
+    class CoverLetter {
+        uuid id
+        uuid user_id
+        uuid resume_id
+        string title
+        string company_name
+        string job_title
+        string recipient_name
+        text job_description
+        text content
+        string template
+        json metadata
+        int version_count
+        datetime created_at
+        datetime updated_at
+        
+        update(data: Partial~CoverLetter~) CoverLetter
+        createVersion(description: string) CoverLetterVersion
+        duplicate() CoverLetter
+        export(format: string, options: ExportOptions) Blob
+    }
+
+    class CoverLetterVersion {
+        uuid id
+        uuid cover_letter_id
+        int version_number
+        json content
+        string description
+        datetime created_at
+        
+        restore() CoverLetter
+    }
+
+    class PortfolioProject {
+        uuid id
+        uuid user_id
+        string title
+        text description
+        string category
+        json tags
+        boolean featured
+        boolean is_public
+        int view_count
+        json metadata
+        datetime created_at
+        datetime updated_at
+        
+        update(data: Partial~PortfolioProject~) PortfolioProject
+        addMedia(file: File, metadata: Partial~PortfolioMedia~) PortfolioMedia
+        toggleFeatured() boolean
+        toggleVisibility() boolean
+        recordView() void
+    }
+
+    class PortfolioMedia {
+        uuid id
+        uuid project_id
+        string media_type
+        string file_path
+        string thumbnail_path
+        string alt_text
+        int display_order
+        json metadata
+        datetime created_at
+        
+        updateMetadata(data: Partial~PortfolioMedia~) PortfolioMedia
+        generateThumbnail() string
+        delete() boolean
+    }
+
+    class UserService {
+        getUserProfile(userId: string) Profile
+        updateUserProfile(userId: string, profileData: Partial~Profile~) Profile
+        checkUsernameAvailability(username: string) boolean
+        getUserSubscriptionStatus(userId: string) SubscriptionStatus
+    }
+
+    class ResumeService {
+        getResumes(userId: string) Resume[]
+        getResumeById(resumeId: string, userId: string) Resume
+        createResume(resumeData: Partial~Resume~, userId: string) Resume
+        updateResume(resumeId: string, resumeData: Partial~Resume~, userId: string) Resume
+        deleteResume(resumeId: string, userId: string) boolean
+        duplicateResume(resumeId: string, userId: string) Resume
+        createResumeVersion(resumeId: string, description: string, userId: string) ResumeVersion
+        getResumeVersions(resumeId: string, userId: string) ResumeVersion[]
+    }
+
+    class CoverLetterService {
+        getCoverLetters(userId: string) CoverLetter[]
+        getCoverLetterById(coverId: string, userId: string) CoverLetter
+        createCoverLetter(coverData: Partial~CoverLetter~, userId: string) CoverLetter
+        updateCoverLetter(coverId: string, coverData: Partial~CoverLetter~, userId: string) CoverLetter
+        deleteCoverLetter(coverId: string, userId: string) boolean
+        duplicateCoverLetter(coverId: string, userId: string) CoverLetter
+        createCoverLetterVersion(coverId: string, description: string, userId: string) CoverLetterVersion
+        getCoverLetterVersions(coverId: string, userId: string) CoverLetterVersion[]
+    }
+
+    class AIService {
+        generateResumeBulletPoints(experience: string, jobDescription: string) Promise~string[]~
+        enhanceResumeContent(resumeContent: string, jobDescription: string) Promise~string~
+        analyzeCoverLetterQuality(coverLetter: string, resumeContent: string, jobDescription: string) Promise~AIFeedback~
+        generateCoverLetter(resumeData: Resume, jobDetails: JobDetails) Promise~string~
+        analyzeResumeForATS(resumeContent: string, jobDescription: string) Promise~ATSAnalysis~
+        enhancePortfolioDescription(description: string, category: string) Promise~string~
+    }
+
+    class PortfolioService {
+        getProjects(userId: string) PortfolioProject[]
+        getProjectById(projectId: string, userId: string) PortfolioProject
+        createProject(projectData: Partial~PortfolioProject~, userId: string) PortfolioProject
+        updateProject(projectId: string, projectData: Partial~PortfolioProject~, userId: string) PortfolioProject
+        deleteProject(projectId: string, userId: string) boolean
+        getPublicPortfolio(username: string) {profile: Profile, projects: PortfolioProject[]}
+        uploadMedia(projectId: string, file: File, metadata: Partial~PortfolioMedia~, userId: string) PortfolioMedia
+        deleteMedia(mediaId: string, userId: string) boolean
+        reorderMedia(projectId: string, mediaOrder: string[], userId: string) boolean
+        recordPortfolioView(username: string, projectId: string) void
+    }
+
+    class ExportService {
+        exportResumeToPDF(resumeId: string, userId: string, options: ExportOptions) Blob
+        exportResumeToDocx(resumeId: string, userId: string, options: ExportOptions) Blob
+        exportCoverLetterToPDF(coverId: string, userId: string, options: ExportOptions) Blob
+        exportCoverLetterToDocx(coverId: string, userId: string, options: ExportOptions) Blob
+        getPlainTextResume(resumeId: string, userId: string) string
+        getShareableLink(documentId: string, documentType: string, userId: string) string
+    }
+
+    class SubscriptionService {
+        createCheckoutSession(userId: string, plan: string) {url: string, sessionId: string}
+        handleSubscriptionWebhook(payload: any) void
+        cancelSubscription(userId: string) boolean
+        checkFeatureAccess(userId: string, feature: string) boolean
+    }
+
+    class AuthService {
+        signInWithEmail(email: string) Promise~{success: boolean, message: string}~
+        signInWithGoogle() Promise~{success: boolean}~
+        signOut() Promise~boolean~
+        getSession() Promise~Session~
+        getUser() Promise~User~
+        resetPassword(email: string) Promise~{success: boolean}~
+    }
+
+    User "1" -- "1" Profile : has
+    User "1" -- "0..1" Subscription : has
+    User "1" -- "*" Resume : creates
+    User "1" -- "*" CoverLetter : creates
+    User "1" -- "*" PortfolioProject : owns
+    Resume "1" -- "*" ResumeVersion : tracks
+    CoverLetter "1" -- "*" CoverLetterVersion : tracks
+    Resume "1" -- "*" CoverLetter : inspires
+    PortfolioProject "1" -- "*" PortfolioMedia : contains

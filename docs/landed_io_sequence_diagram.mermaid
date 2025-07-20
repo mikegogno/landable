@@ -1,0 +1,140 @@
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant AuthService
+    participant UserService
+    participant ResumeService
+    participant CoverLetterService
+    participant AIService
+    participant PortfolioService
+    participant ExportService
+    participant SubscriptionService
+    participant Supabase
+    participant OpenAI
+    participant LemonSqueezy
+
+    %% Authentication Flow
+    User->>Frontend: Register/Login
+    alt Sign in with Email
+        Frontend->>AuthService: signInWithEmail(email)
+        AuthService->>Supabase: auth.signInWithOtp({email})
+        Supabase-->>User: Send magic link email
+        User->>Frontend: Click magic link
+        Frontend->>AuthService: verifyOtp(token)
+        AuthService->>Supabase: auth.verifyOtp(token)
+        Supabase-->>AuthService: Return session
+    else Sign in with Google
+        Frontend->>AuthService: signInWithGoogle()
+        AuthService->>Supabase: auth.signInWithOAuth({provider: 'google'})
+        Supabase->>User: Redirect to Google consent
+        User->>Supabase: Grant permissions
+        Supabase-->>AuthService: Return session
+    end
+    AuthService-->>Frontend: Return authenticated session
+    
+    %% Profile Creation (new user)
+    Frontend->>UserService: getUserProfile(userId)
+    UserService->>Supabase: Query profiles table
+    alt New User
+        Supabase-->>UserService: No profile found
+        UserService-->>Frontend: Return null
+        Frontend->>User: Show onboarding form
+        User->>Frontend: Submit profile information
+        Frontend->>UserService: updateUserProfile(userId, profileData)
+        UserService->>Supabase: Insert into profiles table
+        Supabase-->>UserService: Return created profile
+    else Existing User
+        Supabase-->>UserService: Return profile data
+    end
+    UserService-->>Frontend: Return profile
+    Frontend->>User: Show dashboard
+
+    %% Resume Creation Flow
+    User->>Frontend: Create new resume
+    Frontend->>ResumeService: createResume(resumeData, userId)
+    ResumeService->>Supabase: Insert into resumes table
+    Supabase-->>ResumeService: Return created resume
+    ResumeService-->>Frontend: Return resume data
+    Frontend->>User: Show resume editor
+    
+    %% AI Enhancement Flow
+    User->>Frontend: Request AI enhancement
+    Frontend->>AIService: generateResumeBulletPoints(experience, jobDescription)
+    AIService->>OpenAI: Create completion with prompt
+    OpenAI-->>AIService: Return generated text
+    AIService-->>Frontend: Return enhanced content
+    Frontend->>User: Show AI suggestions
+    User->>Frontend: Accept suggestions
+    Frontend->>ResumeService: updateResume(resumeId, updatedData, userId)
+    ResumeService->>Supabase: Update resumes table
+    Supabase-->>ResumeService: Return updated resume
+    ResumeService-->>Frontend: Return updated data
+    
+    %% Cover Letter Generation Flow
+    User->>Frontend: Generate cover letter
+    Frontend->>AIService: generateCoverLetter(resumeData, jobDetails)
+    AIService->>OpenAI: Create completion with prompt
+    OpenAI-->>AIService: Return generated text
+    AIService-->>Frontend: Return cover letter content
+    Frontend->>CoverLetterService: createCoverLetter(coverLetterData, userId)
+    CoverLetterService->>Supabase: Insert into cover_letters table
+    Supabase-->>CoverLetterService: Return created cover letter
+    CoverLetterService-->>Frontend: Return cover letter data
+    Frontend->>User: Show generated cover letter
+    
+    %% Portfolio Project Creation Flow
+    User->>Frontend: Create portfolio project
+    Frontend->>PortfolioService: createProject(projectData, userId)
+    PortfolioService->>Supabase: Insert into portfolio_projects table
+    Supabase-->>PortfolioService: Return created project
+    PortfolioService-->>Frontend: Return project data
+    Frontend->>User: Show project editor
+    
+    %% Media Upload Flow
+    User->>Frontend: Upload media files
+    Frontend->>PortfolioService: uploadMedia(projectId, file, metadata, userId)
+    PortfolioService->>Supabase: Upload file to storage
+    Supabase-->>PortfolioService: Return file path
+    PortfolioService->>Supabase: Insert into portfolio_media table
+    Supabase-->>PortfolioService: Return created media record
+    PortfolioService-->>Frontend: Return media data
+    Frontend->>User: Show updated project
+    
+    %% Document Export Flow
+    User->>Frontend: Export resume as PDF
+    Frontend->>SubscriptionService: checkFeatureAccess(userId, 'export_pdf')
+    SubscriptionService->>Supabase: Query subscriptions table
+    Supabase-->>SubscriptionService: Return subscription status
+    alt Premium User or Has Credits
+        SubscriptionService-->>Frontend: Allow export
+        Frontend->>ExportService: exportResumeToPDF(resumeId, userId, options)
+        ExportService->>Supabase: Get resume data
+        Supabase-->>ExportService: Return resume
+        ExportService-->>Frontend: Return PDF blob
+        Frontend->>User: Download PDF
+    else Free User without Credits
+        SubscriptionService-->>Frontend: Export not allowed
+        Frontend->>User: Show upgrade prompt
+    end
+    
+    %% Subscription Flow
+    User->>Frontend: Upgrade to premium
+    Frontend->>SubscriptionService: createCheckoutSession(userId, plan)
+    SubscriptionService->>LemonSqueezy: Create checkout session
+    LemonSqueezy-->>SubscriptionService: Return checkout URL
+    SubscriptionService-->>Frontend: Return checkout URL
+    Frontend->>User: Redirect to checkout page
+    User->>LemonSqueezy: Complete payment
+    LemonSqueezy->>SubscriptionService: Send webhook notification
+    SubscriptionService->>Supabase: Update subscriptions table
+    Supabase-->>SubscriptionService: Return updated subscription
+    
+    %% Public Portfolio Viewing Flow
+    User->>Frontend: Visit username.landable.ai
+    Frontend->>PortfolioService: getPublicPortfolio(username)
+    PortfolioService->>Supabase: Query profiles and portfolio_projects
+    Supabase-->>PortfolioService: Return portfolio data
+    PortfolioService-->>Frontend: Return portfolio data
+    Frontend->>User: Display portfolio page
+    Frontend->>PortfolioService: recordPortfolioView(username)
+    PortfolioService->>Supabase: Increment view count
